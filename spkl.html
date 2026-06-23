@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+
+  <link rel="icon" type="image/png" href="img/favicon.ico">
+<meta charset="UTF-8">
+<title>SPKL Multi Karyawan</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<style>
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+  }
+  .lemburTable th,
+  .lemburTable td,
+  .ttd th,
+  .ttd td {
+    border: 1px solid #000;
+    font-size: 14px;
+    text-align: center;
+    vertical-align: middle;
+  }
+    .ttd-box {
+    height: 100px;
+  }
+
+  .jabatan {
+    font-size: 12px;
+    padding-top: 5px;
+  }
+  .nama-ttd td {
+  border-bottom: none !important;
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.jabatan-ttd td {
+  border-top: none !important;
+}
+
+  .lemburTable td{
+    height: 28px;
+}
+.form-verifikasi {
+    background: white;
+    padding: 20px;
+    margin-bottom: 30px;
+    border: 1px solid #ccc;
+}
+
+@media print {
+  #inputSPKL,
+  #karyawan,
+  #btnTambah,
+  #btnVerifikasi,
+  button {
+    display: none !important;
+  }
+
+  .max-w-6xl:first-child {
+    display: none !important;
+  }
+
+  #formVerifikasi {
+    display: block !important;
+  }
+
+  body {
+    zoom:85%;
+    margin: 0;
+    padding: 0;
+    background: white !important;
+  }
+
+  .form-verifikasi {
+    
+    page-break-after: always;
+    break-before: page;
+    break-after: page;
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0;
+    padding: 0mm;
+  }
+   /* Halaman pertama tidak perlu page break di atas */
+  .form-verifikasi:first-child {
+    page-break-before: auto;
+    break-before: auto;
+  }
+@media print {
+
+  /* SPKL tetap dicetak di halaman pertama */
+  #spkl {
+    display: block !important;
+  }
+
+  /* Form verifikasi mulai dari halaman baru */
+  #formVerifikasi {
+    page-break-before: always;
+    break-before: page;
+    display: block !important;
+  }
+
+  /* Setiap karyawan di halaman baru */
+  .form-verifikasi {
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .form-verifikasi:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+}
+  .form-verifikasi:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 5mm;
+  }
+  .form-verifikasi:last-child {
+    page-break-after: auto;
+  }
+
+  .shadow {
+    box-shadow: none !important;
+  }
+
+  .bg-white {
+    background: white !important;
+  }
+}
+</style>
+</head>
+
+<body class="bg-gray-100 p-6">
+<div class="max-w-6xl mx-auto bg-white p-6 rounded shadow">
+
+<h2 class="text-3xl font-bold mb-8 text-center text-blue-600">
+    Sistem Pembuatan SPKL
+  </h2>
+
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+  <div class="mb-4">
+  <label class="font-bold text-md">Nama Pembuat SPKL</label>
+  <input id="namaPembuat"
+       type="text"
+       class="w-full border p-4 rounded-md mt-2"
+       oninput="cekDataAwal()">
+  </div>
+  <div>
+  <label class="font-bold text-md">Personal Number</label>
+
+  <input id="pnPembuat"
+         type="text"
+         maxlength="8"
+         class="w-full border p-4 rounded-md mt-2"
+         oninput="cekDataAwal()">
+
+  <div style="height:18px">
+    <small id="errorPN"
+           class="text-red-600 text-xs invisible">
+      Personal Number harus terdiri dari 8 digit
+    </small>
+  </div>
+</div>
+  <select id="bulan"
+        class="border p-4 rounded"
+        onchange="cekDataAwal()">
+    <option value="" selected disabled>-- Pilih Bulan --</option>
+    <option value="Januari">Januari</option>
+    <option value="Februari">Februari</option>
+    <option value="Maret">Maret</option>
+    <option value="April">April</option>
+    <option value="Mei">Mei</option>
+    <option value="Juni">Juni</option>
+    <option value="Juli">Juli</option>
+    <option value="Agustus">Agustus</option>
+    <option value="September">September</option>
+    <option value="Oktober">Oktober</option>
+    <option value="November">November</option>
+    <option value="Desember">Desember</option>
+  </select>
+
+ <select id="tahun"
+        class="border p-4 rounded"
+        onchange="cekDataAwal()">
+
+  <option value="" selected disabled>-- Pilih Tahun --</option>
+</select>
+
+</div>
+
+<div id="karyawan" class="hidden"></div>
+<div id="halamanAwal" class="text-center my-6">
+  
+
+ <button
+  id="btnNext"
+  class="bg-blue-600 text-white px-6 py-3 rounded disabled:opacity-50"
+  disabled>
+  Next
+</button>
+</div>
+
+<button id="btnTambah" onclick="tambahKaryawan()"
+        class="hidden bg-green-600 text-white px-3 py-2 rounded mb-4 disabled:opacity-50"
+        disabled>
+  + Tambah Karyawan
+</button>
+
+<button id="btnGenerate"
+        onclick="buatTabel()"
+        class="hidden bg-blue-600 text-white px-4 py-2 rounded mb-4 ml-2">
+  Generate Tabel
+</button>
+<button
+  id="btnVerifikasi"
+  type="button"
+  class="hidden bg-yellow-600 text-white px-4 py-2 rounded ml-2">
+  Form Verifikasi
+</button>
+</div>
+
+
+<!-- HEADER SPKL (AWALNYA DISMBUNYIKAN) -->
+<div class="max-w-6xl mx-auto bg-white p-6 rounded shadow mt-10 hidden" id="spkl">
+<div class="mb-4">
+  <h1 class="text-center text-2xl font-bold uppercase mb-8">
+    SURAT PERINTAH KERJA LEMBUR
+  </h1>
+  <table style="margin-bottom:12px">
+    <tbody>
+      <tr>
+        <td style="width:200px;text-align:left">Unit Kerja</td>
+        <td style="width:10px;text-align:left">:</td>
+        <td>Payment Point (Visa On Arrival) Terminal 3 Ultimate Bandara Soekarno Hatta</td>
+      </tr>
+      <tr>
+        <td style="width:10px;text-align:left">Pembuat Pengajuan Lembur</td>
+        <td style="width:10px;text-align:left">:</td>
+        <td style="text-align:left" id="txtnamaPembuat"></td>
+      </tr>
+       
+    </tbody>
+  </table>
+  <p>Diberitahukan Kepada Pekerja Outsourcing dibawah ini :</p>
+
+<table class="w-full border border-collapse text-sm mb-4">
+<thead class="">
+<tr>
+  <th class="border p-2">No</th>
+  <th class="border p-2">PN</th>
+  <th class="border p-2">Nama</th>
+  <th class="border p-2">Tanggal Lembur</th>
+  <th class="border p-2">Jumlah Hari</th>
+  <th class="border p-2">Jam Mulai</th>
+  <th class="border p-2">Jam Selesai</th>
+</tr>
+</thead>
+<tbody id="hasil"></tbody>
+</table>
+<p class="mb-4">Untuk melaksanakan kegiatan kerja lembur sbb :</p>
+<div class="border w-full h-fit mb-2 p-2">
+  <p>Tertera nama diatas bahwa pada tanggal tersebut masuk kerja</p>
+  <p>Keterangan :</p>
+
+  <table style="margin-top:5px;">
+    <tbody id="keteranganSPKL"></tbody>
+  </table>
+</div>
+<p class="mb-2">Demikian Surat Perintah Kerja Lembur ini dibuat untuk dilaksanakan dengan sebaik-baiknya dengan penuh tanggung jawab.</p>
+ <p class="mb-2" id="tanggalTerbit"></p>
+
+  <!-- TTD -->
+  <table class="ttd" style="width:100%; margin-top:8px;">
+    <tr>
+      <th rowspan="2" style="width:20%;" id="pembuatSpklTH">PEMBUAT SPKL</th>
+      <th style="width:25%;">PENGESAHAN</th>
+      <th colspan="3">MENGETAHUI</th>
+    </tr>
+
+    <tr>
+      <th style="width:30%;">PEJABAT PENERBIT SPKL</th>
+      <th style="width:25%;">SPV VOA</th>
+      <th style="width:20%;">PERUSAHAAN OUTSOURCING</th>
+    </tr>
+
+    <!-- AREA KOTAK TTD -->
+    <tr>
+      <td class="ttd-box"></td>
+      <td class="ttd-box"></td>
+      <td class="ttd-box"></td>
+      <td class="ttd-box"></td>
+    </tr>
+
+    <!-- NAMA -->
+    <tr class="nama-ttd">
+      <td id="ttdnamaPembuat"></td>
+      <td>ANTON DARMAWAN</td>
+      <td>ADY PRASETYO</td>
+      <td>NABILA</td>
+    </tr>
+
+    <!-- JABATAN -->
+    <tr class="jabatan-ttd">
+      <td class="jabatan">Payment Point</td>
+      <td class="jabatan">AMO</td>
+      <td class="jabatan">Supervisor</td>
+      <td class="jabatan">PT. Primas Jamintara</td>
+    </tr>
+  </table>
+</div>
+</div>
+
+<div class="max-w-6xl mx-auto bg-white p-6 rounded shadow mt-10 hidden" id="formVerifikasi">
+<div class="w-full items-center" >
+ <div id="verifikasiContainer" class="hidden mt-8 space-y-8"></div>
+
+
+  
+<div class="max-w-6xl mx-auto mt-6">
+  <button
+    type="button"
+    onclick="cetakSPKL()"
+    class="bg-red-600 text-white px-4 py-2 rounded w-full">
+    Gabung PDF Lembur
+  </button>
+
+</div>
+
+
+<script src="script.js"></script>
+<script>
+
+document.getElementById("btnNext").addEventListener("click", () => {
+
+  // Sembunyikan halaman awal
+  document.getElementById("halamanAwal").classList.add("hidden");
+
+  // Tampilkan form input
+  document.getElementById("karyawan").classList.remove("hidden");
+
+  // Tampilkan tombol-tombol
+  document.getElementById("btnTambah").classList.remove("hidden");
+  document.getElementById("btnGenerate").classList.remove("hidden");
+  document.getElementById("btnVerifikasi").classList.remove("hidden");
+
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  const selectTahun = document.getElementById("tahun");
+  const tahunSekarang = new Date().getFullYear();
+
+  // Tampilkan tahun dari tahun sekarang -1 sampai +5 tahun
+  for (let i = tahunSekarang - 1; i <= tahunSekarang + 5; i++) {
+
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent = i;
+
+    selectTahun.appendChild(option);
+  }
+
+});
+function cekDataAwal() {
+
+  const nama = document.getElementById("namaPembuat").value.trim();
+  const pn = document.getElementById("pnPembuat").value.trim();
+  const bulan = document.getElementById("bulan").value;
+  const tahun = document.getElementById("tahun").value;
+
+  const errorPN = document.getElementById("errorPN");
+
+  let pnValid = true;
+
+  // Validasi PN harus tepat 8 digit
+  if (pn !== "" && pn.length !== 8) {
+    errorPN.classList.remove("invisible");
+    pnValid = false;
+} else {
+    errorPN.classList.add("invisible");
+}
+
+  // Aktifkan tombol Next jika semua valid
+  const lengkap =
+    nama !== "" &&
+    pn !== "" &&
+    pnValid &&
+    bulan !== "" &&
+    tahun !== "";
+
+  document.getElementById("btnNext").disabled = !lengkap;
+}
+
+function bukaLembur() {
+  const rows = document.querySelectorAll("#hasil tr");
+
+  if (rows.length === 0) {
+    alert("Generate tabel dulu");
+    return;
+  }
+
+  let data = [];
+
+  rows.forEach(tr => {
+    const td = tr.children;
+
+    data.push({
+      nama: td[2].innerText,
+      pn: td[1].innerText,
+      tanggal: td[3].innerText,
+      mulai: td[5].innerText,
+      selesai: td[6].innerText
+    });
+  });
+
+  const payload = encodeURIComponent(JSON.stringify(data));
+  window.open(`lembur.html?data=${payload}`, "_blank");
+}
+</script>
+<script>
+  
+function cetakSPKL() {
+    window.print();
+}
+</script>
+</body>
+</html>
